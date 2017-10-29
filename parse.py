@@ -39,9 +39,10 @@ class MPEIParser:
             driver.quit()
 
     def get_by_day(self, group, day, even=False):
-        status = True
         if self.table is None:
             status = self._get_schedule(group)
+        else:
+            status = True
 
         if status:
             table = self.table
