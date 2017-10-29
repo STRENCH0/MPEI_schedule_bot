@@ -42,7 +42,8 @@ def messages_handler(message):
             parser = MPEIParser(config.phantom_driver_path)
             db = SQLightHelper(config.database)
             response = parser.get_by_day(db, check_user_group(chat_id), int(message.text), week=1)
-            bot.send_message(message.chat.id, response)
+            hideBoard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, response, reply_markup=hideBoard)
 
             response = parser.get_by_day(db, check_user_group(chat_id), int(message.text), week=2)
             bot.send_message(message.chat.id, response)
