@@ -1,5 +1,6 @@
 import config
 import telebot
+from telebot import types
 from db import SQLightHelper
 from parse import MPEIParser
 from users import *
@@ -12,7 +13,7 @@ user_step = {}  # to process 2-step actions
 def send_welcome(message):
     db = SQLightHelper(config.database)
     if not db.select_single(message.chat.id):  # no user in database
-        bot.send_message(message.chat.id, "Вас приветствует mpei_bot! Для начала введите вашу группу в формате X-XX-XX")
+        bot.send_message(message.chat.id, "Вас приветствует mpei_bot! Для начала введите вашу группу в формате X-XX-XX. (Например А-08м-17)")
         user_step[message.chat.id] = 'init_group_1'  # waiting for group name
     else:
         bot.send_message(message.chat.id, "Бот уже запущен!")
@@ -22,8 +23,10 @@ def send_welcome(message):
 @bot.message_handler(commands=['schedule'])
 def send_schedule(message):
     if not (message.chat.id in user_step) or user_step[message.chat.id] == 0:
-        if check_user_group(message.chat.id):
-            bot.send_message(message.chat.id, "Введите день недели (число от 1 до 6)")
+        if check_user_group(message.chat.id):         
+            keyboard=types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(day_of_week) for day_of_week in ['1','2','3','4','5','6']])
+            bot.send_message(message.chat.id, "Введите день недели (число от 1 до 6)", reply_markup=keyboard)
             user_step[message.chat.id] = 'schedule_1'
         else:
             bot.send_message(message.chat.id, "Сначала введите группу!")
