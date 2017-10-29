@@ -2,6 +2,8 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
+from db import SQLightHelper
+import config
 
 MPEI_SCHEDULE_URL = 'http://mpei.ru/Education/timetable/Pages/default.aspx'
 
@@ -10,6 +12,7 @@ class MPEIParser:
     def __init__(self, path):
         self.path = path
         self.table = None
+        self.group_id = None
 
     def _get_schedule(self, group):
         driver = webdriver.PhantomJS(self.path)
@@ -38,23 +41,63 @@ class MPEIParser:
         finally:
             driver.quit()
 
-    def get_by_day(self, group, day, even=False):
+    def get_by_day(self, SQLightHelper, group, day, week=1, string=True):
+        db = SQLightHelper
+        group_id = db.select_group_id(group)
+        self.group_id = group_id
+        if db.select_lessons_by_day(group_id, week, day):  # if there is schedule in db, load from db
+            lessons = []
+            print('from db')
+            lessons.append(db.select_lessons_by_day(group_id, week, day))
+            if string:
+                #print(lessons)
+                if week == 1:
+                    return str("Четная неделя:\n" + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
+                               lessons[0][2] + '\n' + lessons[0][3] + "\n" + lessons[0][4])
+                else:
+                    return str("Нечетная неделя:\n" + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
+                               lessons[0][2] + '\n' + lessons[0][3] + "\n" + lessons[0][4])
+            else:
+                return lessons
+
+        status = True
         if self.table is None:
+            print('parsing...')
             status = self._get_schedule(group)
-        else:
-            status = True
 
         if status:
+            print('from parse')
             table = self.table
-            if even:
-                return str("Четная неделя:\n" + table[0][day * 2 - 1] + '\n' + table[1][day * 2 - 1] + '\n' +
-                           table[2][day * 2 - 1] + '\n' + table[3][day * 2 - 1] + "\n" + table[4][day * 2 - 1])
+            if string:
+                if week == 1:
+                    self._save_lessons_db(db)
+                    return str("Нетная неделя:\n" + table[0][day * 2 - 1] + '\n' + table[1][day * 2 - 1] + '\n' +
+                               table[2][day * 2 - 1] + '\n' + table[3][day * 2 - 1] + "\n" + table[4][day * 2 - 1])
+                else:
+                    self._save_lessons_db(db)
+                    return str("Четная неделя:\n" + table[0][(day - 1) * 2] + '\n' + table[1][(day - 1) * 2] + '\n' +
+                               table[2][(day - 1) * 2] + '\n' + table[3][(day - 1) * 2] + '\n' + table[4][
+                                   (day - 1) * 2])
             else:
-                return str("Нечетная неделя:\n" + table[0][(day - 1) * 2] + '\n' + table[1][(day - 1) * 2] + '\n' +
-                           table[2][(day - 1) * 2] + '\n' + table[3][(day - 1) * 2] + '\n' + table[4][
-                               (day - 1) * 2])
+                lessons = []
+                if week == 1:
+                    for i in range(0, 5):
+                        lessons.append(table[i][day * 2 - 1])
+                        db.save_lesson(day, week, table[i][day * 2 - 1], group_id, i + 1)
+                else:
+                    for i in range(0, 5):
+                        lessons.append(table[i][(day - 1) * 2])
+                        db.save_lesson(day, week, table[i][(day - 1) * 2], group_id, i + 1)
+                self._save_lessons_db(db)
+                return lessons
         else:
             return False
+
+    def _save_lessons_db(self, db):
+        for day in range(1, 7):
+            for number in range(1, 6):
+                db.save_lesson(day=day, week=1, lesson=self.table[number-1][day * 2 - 1], group_id=self.group_id, number=number)
+                db.save_lesson(day=day, week=2, lesson=self.table[number-1][(day - 1) * 2], group_id=self.group_id, number=number)
 
 
 def parse_table(element):

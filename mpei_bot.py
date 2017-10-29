@@ -37,11 +37,13 @@ def messages_handler(message):
             user_step[chat_id] = 'schedule_2'
             bot.send_chat_action(chat_id, 'typing')
             parser = MPEIParser(config.phantom_driver_path)
-            response = parser.get_by_day(check_user_group(chat_id), int(message.text), False)
+            db = SQLightHelper(config.database)
+            response = parser.get_by_day(db, check_user_group(chat_id), int(message.text), week=1)
             bot.send_message(message.chat.id, response)
 
-            response = parser.get_by_day(check_user_group(chat_id), int(message.text), True)
+            response = parser.get_by_day(db, check_user_group(chat_id), int(message.text), week=2)
             bot.send_message(message.chat.id, response)
+            db.close()
             user_step[chat_id] = 0
         elif user_step[chat_id] == 'init_group_1':  # save user group
             db = SQLightHelper(config.database)

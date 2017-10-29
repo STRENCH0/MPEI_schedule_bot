@@ -1,6 +1,4 @@
-import heapq
 import time
-from operator import itemgetter
 
 from db import SQLightHelper
 import config
