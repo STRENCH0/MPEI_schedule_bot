@@ -61,11 +61,11 @@ class MPEIParser:
                 return lessons
 
         status = True
-        if self.table is None:
+        if self.table is None: # parse schedule
             print('parsing...')
             status = self._get_schedule(group)
 
-        if status:
+        if status:              # if parsing was successful return schedule
             print('from parse')
             table = self.table
             if string:
@@ -83,11 +83,9 @@ class MPEIParser:
                 if week == 1:
                     for i in range(0, 5):
                         lessons.append(table[i][day * 2 - 1])
-                        db.save_lesson(day, week, table[i][day * 2 - 1], group_id, i + 1)
                 else:
                     for i in range(0, 5):
                         lessons.append(table[i][(day - 1) * 2])
-                        db.save_lesson(day, week, table[i][(day - 1) * 2], group_id, i + 1)
                 self._save_lessons_db(db)
                 return lessons
         else:
