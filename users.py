@@ -32,3 +32,14 @@ def check_user_group(chat_id):
         users[user[0][0]] = user_spec
         return user_group
 
+
+def delete_user(chat_id):
+    db = SQLightHelper(config.database)
+    if chat_id in users:
+        users.pop(chat_id)
+    if db.delete_user(chat_id):
+        db.close()
+        return True
+    else:
+        db.close()
+        return False

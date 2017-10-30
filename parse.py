@@ -47,37 +47,33 @@ class MPEIParser:
         self.group_id = group_id
         if db.select_lessons_by_day(group_id, week, day):  # if there is schedule in db, load from db
             lessons = []
-            print('from db')
             lessons.append(db.select_lessons_by_day(group_id, week, day))
             if string:
-                #print(lessons)
+                # print(lessons)
                 if week == 1:
-                    return str("Четная неделя:\n" + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
+                    return str("Нечетная неделя:\n" + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
                                lessons[0][2] + '\n' + lessons[0][3] + "\n" + lessons[0][4])
                 else:
-                    return str("Нечетная неделя:\n" + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
+                    return str("Четная неделя:\n" + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
                                lessons[0][2] + '\n' + lessons[0][3] + "\n" + lessons[0][4])
             else:
                 return lessons
 
         status = True
-        if self.table is None: # parse schedule
-            print('parsing...')
+        if self.table is None:  # parse schedule
             status = self._get_schedule(group)
 
-        if status:              # if parsing was successful return schedule
-            print('from parse')
+        if status:  # if parsing was successful return schedule
             table = self.table
             if string:
                 if week == 1:
                     self._save_lessons_db(db)
-                    return str("Нетная неделя:\n" + table[0][day * 2 - 1] + '\n' + table[1][day * 2 - 1] + '\n' +
-                               table[2][day * 2 - 1] + '\n' + table[3][day * 2 - 1] + "\n" + table[4][day * 2 - 1])
+                    return str("Нечетная неделя:\n" + table[0][(day - 1) * 2] + '\n' + table[1][(day - 1) * 2] + '\n' +
+                               table[2][(day - 1) * 2] + '\n' + table[3][(day - 1) * 2] + '\n' + table[4][(day - 1) * 2])
                 else:
                     self._save_lessons_db(db)
-                    return str("Четная неделя:\n" + table[0][(day - 1) * 2] + '\n' + table[1][(day - 1) * 2] + '\n' +
-                               table[2][(day - 1) * 2] + '\n' + table[3][(day - 1) * 2] + '\n' + table[4][
-                                   (day - 1) * 2])
+                    return str("Четная неделя:\n" + table[0][day * 2 - 1] + '\n' + table[1][day * 2 - 1] + '\n' +
+                               table[2][day * 2 - 1] + '\n' + table[3][day * 2 - 1] + "\n" + table[4][day * 2 - 1])
             else:
                 lessons = []
                 if week == 1:
@@ -94,8 +90,10 @@ class MPEIParser:
     def _save_lessons_db(self, db):
         for day in range(1, 7):
             for number in range(1, 6):
-                db.save_lesson(day=day, week=1, lesson=self.table[number-1][day * 2 - 1], group_id=self.group_id, number=number)
-                db.save_lesson(day=day, week=2, lesson=self.table[number-1][(day - 1) * 2], group_id=self.group_id, number=number)
+                db.save_lesson(day=day, week=1, lesson=self.table[number - 1][(day - 1) * 2], group_id=self.group_id,
+                               number=number)
+                db.save_lesson(day=day, week=2, lesson=self.table[number - 1][day * 2 - 1], group_id=self.group_id,
+                               number=number)
 
 
 def parse_table(element):

@@ -1,6 +1,5 @@
 import sqlite3
 import config
-from schedule import Lesson
 
 
 class SQLightHelper:
@@ -81,6 +80,15 @@ class SQLightHelper:
         group_id = self.select_group_id(group)
         if group_id:
             self.cursor.execute("DELETE FROM schedule WHERE group_id = ?", (group_id,))
+            self.connection.commit()
+            return True
+        else:
+            return False
+
+    def delete_user(self, chat_id):
+        if self.select_single(chat_id):
+            self.cursor.execute("DELETE FROM chats WHERE chat_id = ?", (chat_id,))
+            self.connection.commit()
             return True
         else:
             return False
@@ -88,8 +96,6 @@ class SQLightHelper:
     def close(self):
         self.connection.close()
 
-
 # db = SQLightHelper(config.database)
-# if db.select_lessons_by_day(4, 1, 2):
-#     print(True)
+# print(db.delete_user(74716412))
 # db.close()

@@ -12,7 +12,8 @@ user_step = {}  # to process 2-step actions
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     db = SQLightHelper(config.database)
-    if not db.select_single(message.chat.id):  # no user in database
+    user = db.select_single(message.chat.id)
+    if not user:   # no user or his group in database
         bot.send_message(message.chat.id, "Вас приветствует mpei_bot! Для начала введите вашу группу в формате X-XX-XX. (Например А-08м-17)")
         user_step[message.chat.id] = 'init_group_1'  # waiting for group name
     else:
@@ -32,6 +33,17 @@ def send_schedule(message):
             bot.send_message(message.chat.id, "Сначала введите группу!")
 
 
+@bot.message_handler(commands=['delete_group'])
+def delete_group(message):
+    if not (message.chat.id in user_step) or user_step[message.chat.id] == 0:
+        if delete_user(message.chat.id):
+            bot.send_message(message.chat.id, "Группа удалена")
+        else:
+            bot.send_message(message.chat.id, "Команда недоступна")
+    else:
+        bot.send_message(message.chat.id, "Команда недоступна")
+
+
 @bot.message_handler(content_types=['text'])
 def messages_handler(message):
     chat_id = message.chat.id
@@ -42,8 +54,8 @@ def messages_handler(message):
             parser = MPEIParser(config.phantom_driver_path)
             db = SQLightHelper(config.database)
             response = parser.get_by_day(db, check_user_group(chat_id), int(message.text), week=1)
-            hideBoard = types.ReplyKeyboardRemove()
-            bot.send_message(message.chat.id, response, reply_markup=hideBoard)
+            hide_board = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, response, reply_markup=hide_board)
 
             response = parser.get_by_day(db, check_user_group(chat_id), int(message.text), week=2)
             bot.send_message(message.chat.id, response)
