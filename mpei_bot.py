@@ -55,13 +55,14 @@ def messages_handler(message):
             bot.send_chat_action(chat_id, 'typing')
             parser = MPEIParser(config.phantom_driver_path)
             db = SQLightHelper(config.database)
-
-            response = parser.get_by_day(db, check_user_group(chat_id), days.index(message.text) + 1, week=1)
             hide_board = types.ReplyKeyboardRemove()
-            bot.send_message(message.chat.id, response, reply_markup=hide_board)
-
-            response = parser.get_by_day(db, check_user_group(chat_id), days.index(message.text) + 1, week=2)
-            bot.send_message(message.chat.id, response)
+            response = parser.get_by_day(db, check_user_group(chat_id), days.index(message.text) + 1, week=1)
+            if not response:
+                bot.send_message(message.chat.id, 'Расписание не найдено!', reply_markup=hide_board)
+            else:
+                bot.send_message(message.chat.id, response, reply_markup=hide_board)
+                response = parser.get_by_day(db, check_user_group(chat_id), days.index(message.text) + 1, week=2)
+                bot.send_message(message.chat.id, response)
             db.close()
             user_step[chat_id] = 0
         elif user_step[chat_id] == 'init_group_1':  # save user group

@@ -24,11 +24,11 @@ class MPEIParser:
             search_field.send_keys(group)
             search_field.send_keys(Keys.ENTER)
             if len(driver.window_handles) != 1:
-                driver.switch_to.window(driver.window_handles[1])
-                href_block = driver.find_element_by_class_name('mpei-tt-linkedlist')
-                href = href_block.find_element_by_partial_link_text('Расписание')
-                href.click()
                 try:
+                    driver.switch_to.window(driver.window_handles[1])
+                    href_block = driver.find_element_by_class_name('mpei-tt-linkedlist')
+                    href = href_block.find_element_by_partial_link_text('Расписание')
+                    href.click()
                     table = driver.find_element_by_class_name('mpei-tt-grid-wrap')
                     self.table = parse_table(table.get_attribute('innerHTML'))
                     return True
