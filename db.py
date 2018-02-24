@@ -23,7 +23,7 @@ class SQLightHelper:
         with self.connection:
             try:
                 group_id = self.select_group_id(group)
-                if not group_id:
+                if not group_id:        # first check group and create if not exists and get it's id
                     self.cursor.execute("INSERT INTO groups(group_name) VALUES (?)", (group.upper(),))
                     group_id = self.cursor.execute("SELECT group_id FROM groups WHERE group_name = ?",
                                                    (group.upper(),)).fetchall()[0][0]
@@ -69,7 +69,7 @@ class SQLightHelper:
                 return False
             lessons_exec = ['-----', '-----', '-----', '-----', '-----']
             for lesson in lessons:
-                lessons_exec[lesson[0] - 1] = lesson[1]
+                lessons_exec[lesson[0] - 1] = lesson[1]     # lesson[0] - number from 0 to x; lesson[1] - lesson name
             return lessons_exec
         else:
             return self.cursor.execute(

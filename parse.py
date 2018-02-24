@@ -14,6 +14,7 @@ class MPEIParser:
         self.table = None
         self.group_id = None
 
+    # parsing MPEI site and take html table with schedule from it
     def _get_schedule(self, group):
         driver = webdriver.PhantomJS(self.path)
         try:
@@ -41,51 +42,55 @@ class MPEIParser:
         finally:
             driver.quit()
 
-    def get_by_day(self, SQLightHelper, group, day, week=1, string=True):
-        db = SQLightHelper
+    # if string is true returns formatted string for output else returns massive
+    def get_by_day(self, db, group, day, week=1, string=True):
         group_id = db.select_group_id(group)
         self.group_id = group_id
         if db.select_lessons_by_day(group_id, week, day):  # if there is schedule in db, load from db
-            lessons = []
-            lessons.append(db.select_lessons_by_day(group_id, week, day))
+            #lessons = []
+            #lessons.append(db.select_lessons_by_day(group_id, week, day))
+            lessons = db.select_lessons_by_day(group_id, week, day)
             if string:
                 # print(lessons)
                 if week == 1:
-                    return str("Нечетная неделя:\n" + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
-                               lessons[0][2] + '\n' + lessons[0][3] + "\n" + lessons[0][4])
+                    weekStr = "Нечетная неделя:\n"
                 else:
-                    return str("Четная неделя:\n" + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
-                               lessons[0][2] + '\n' + lessons[0][3] + "\n" + lessons[0][4])
-            else:
-                return lessons
+                    weekStr = "Четная неделя:\n"
 
-        status = True
-        if self.table is None:  # parse schedule
-            status = self._get_schedule(group)
-
-        if status:  # if parsing was successful return schedule
-            table = self.table
-            if string:
-                if week == 1:
-                    self._save_lessons_db(db)
-                    return str("Нечетная неделя:\n" + table[0][(day - 1) * 2] + '\n' + table[1][(day - 1) * 2] + '\n' +
-                               table[2][(day - 1) * 2] + '\n' + table[3][(day - 1) * 2] + '\n' + table[4][(day - 1) * 2])
-                else:
-                    self._save_lessons_db(db)
-                    return str("Четная неделя:\n" + table[0][day * 2 - 1] + '\n' + table[1][day * 2 - 1] + '\n' +
-                               table[2][day * 2 - 1] + '\n' + table[3][day * 2 - 1] + "\n" + table[4][day * 2 - 1])
+                # return str(weekStr + lessons[0][0] + '\n' + lessons[0][1] + '\n' +
+                #                lessons[0][2] + '\n' + lessons[0][3] + "\n" + lessons[0][4])
+                return str(weekStr + lessons[0] + '\n' + lessons[1] + '\n' +
+                           lessons[2] + '\n' + lessons[3] + "\n" + lessons[4])
             else:
-                lessons = []
-                if week == 1:
-                    for i in range(0, 5):
-                        lessons.append(table[i][day * 2 - 1])
-                else:
-                    for i in range(0, 5):
-                        lessons.append(table[i][(day - 1) * 2])
-                self._save_lessons_db(db)
                 return lessons
         else:
-            return False
+            status = True
+            if self.table is None:  # parse schedule
+                status = self._get_schedule(group)
+
+            if status:  # if parsing was successful return schedule
+                self._save_lessons_db(db)
+                if string:
+                    return self.get_by_day(db, group, day, week)   # TO DO: CHECK IT
+                    # if week == 1:
+                    #     return str("Нечетная неделя:\n" + table[0][(day - 1) * 2] + '\n' + table[1][(day - 1) * 2] + '\n' +
+                    #                table[2][(day - 1) * 2] + '\n' + table[3][(day - 1) * 2] + '\n' + table[4][(day - 1) * 2])
+                    # else:
+                    #     return str("Четная неделя:\n" + table[0][day * 2 - 1] + '\n' + table[1][day * 2 - 1] + '\n' +
+                    #                table[2][day * 2 - 1] + '\n' + table[3][day * 2 - 1] + "\n" + table[4][day * 2 - 1])
+                else:
+                    return self.get_by_day(db, group, day, week, False)
+                    # lessons = []
+                    # if week == 1:
+                    #     for i in range(0, 5):
+                    #         lessons.append(table[i][day * 2 - 1])
+                    # else:
+                    #     for i in range(0, 5):
+                    #         lessons.append(table[i][(day - 1) * 2])
+                    # self._save_lessons_db(db)
+                    # return lessons
+            else:
+                return False
 
     def _save_lessons_db(self, db):
         for day in range(1, 7):
@@ -104,26 +109,26 @@ def parse_table(element):
     # print(headings)
 
     original_table = []
-    all_day = {}
-    for row in table.find_all("tr")[2:]:
+    all_day = {}                            # free days
+    for row in table.find_all("tr")[2:]:    # rows
         cells = row.find_all('td')[1:]
-        new_row = []
-        i = 0
-        for cell in cells:
+        new_row = []                        # some lesson of all days
+        i = 0                               # need only for free days check because rowspan5 cell exists only in one row
+        for cell in cells:                  # some lesson num in all days (for example 1st lessons in all days)
             cell_text = cell.find(text=True)
-            if cell_text is None:
+            if cell_text is None:           # no lesson on this week
                 cell_text = '-----'
             new_row.append(cell_text)
             i += 1
 
-            if check_colspan2(cell):
+            if check_colspan2(cell):        # if same schedule on both weeks add it again and skip on next iteration
                 new_row.append(cell_text)
                 i += 1
 
-            if check_rowspan5(cell):
+            if check_rowspan5(cell):        # if free day save for the next rows
                 all_day[len(new_row) - 2] = cell_text
 
-            if i in all_day:
+            if i in all_day:                # check if this day if free; if true add it to both weeks and skip
                 new_row.append(all_day[i])
                 new_row.append(all_day[i])
                 i += 2
@@ -132,6 +137,7 @@ def parse_table(element):
     return original_table
 
 
+# colspan2 means same schedule for both weeks
 def check_colspan2(cell):
     try:
         col = int(cell["colspan"])
@@ -143,6 +149,7 @@ def check_colspan2(cell):
         return False
 
 
+# rowspan5 means all day one lesson
 def check_rowspan5(cell):
     try:
         col = int(cell["rowspan"])
