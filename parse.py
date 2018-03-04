@@ -2,8 +2,6 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
-from db import SQLightHelper
-import config
 
 MPEI_SCHEDULE_URL = 'http://mpei.ru/Education/timetable/Pages/default.aspx'
 
@@ -116,7 +114,7 @@ def parse_table(element):
         i = 0                               # need only for free days check because rowspan5 cell exists only in one row
         for cell in cells:                  # some lesson num in all days (for example 1st lessons in all days)
             cell_text = cell.find(text=True)
-            if cell_text is None:           # no lesson on this week
+            if cell_text is None:           # no lesson on this weeks
                 cell_text = '-----'
             new_row.append(cell_text)
             i += 1
